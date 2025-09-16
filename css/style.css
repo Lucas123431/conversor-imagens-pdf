@@ -1,0 +1,265 @@
+/* ===============================
+   Estilos para o Conversor Imagens → PDF
+   =============================== */
+
+/* Paleta de cores */
+:root {
+  --bg: #fafafa;
+  --card: #ffffff;
+  --muted: #6b7280;
+  --accent: #0f766e;
+}
+
+/* Reset e layout base */
+* { box-sizing: border-box; }
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+}
+body {
+  background: var(--bg);
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+/* Container principal */
+.app {
+  width: 100%;
+  max-width: 820px;
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(15,23,42,0.06);
+  padding: 28px;
+}
+
+/* Cabeçalho */
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+h1 { font-size: 20px; margin: 0; }
+p.lead { margin: 0; color: var(--muted); font-size: 13px; }
+
+/* Barra de controles */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+.controls > * { min-height: 40px; }
+select,
+input[type=number] {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #e6e9ef;
+}
+button {
+  background: var(--accent);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 0;
+  cursor: pointer;
+}
+button[disabled] { opacity: 0.5; cursor: default; }
+.btn-muted {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid #eef2f6;
+}
+
+/* Lista de pré-visualização */
+#preview {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.item {
+  background: #fff;
+  border: 1px solid #f0f2f5;
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.thumb {
+  height: 100px;
+  width: 100%;
+  object-fit: contain;
+  background: #f8fafb;
+  border-radius: 6px;
+}
+
+/* Informações do arquivo */
+.meta {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Botões de ação */
+.actions {
+  display: flex;
+  gap: 6px;
+}
+.small {
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #0f766e;   /* borda visível */
+  background: #0f766e;         /* fundo verde */
+  color: #fff;                 /* texto branco */
+  cursor: pointer;
+}
+
+/* Rodapé */
+footer {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+/* Estilos para o Drag and Drop */
+.item.dragging {
+  opacity: 0.5; /* Deixa o item que está sendo arrastado semitransparente */
+}
+
+.item.drag-over {
+  border: 2px dashed var(--accent); /* Destaca o item sobre o qual estamos passando */
+  transform: scale(1.02);
+}
+/* Estilo para a área de drop de arquivos */
+.app.drop-zone-active {
+  border: 2px dashed var(--accent);
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.2);
+}
+/* ===============================
+   Estilos do Input de Arquivo Customizado
+   =============================== */
+
+/* Esconde o input de arquivo padrão */
+.hidden-file-input {
+  display: none;
+}
+
+/* Estiliza o label que agora age como botão */
+.file-input-container .btn {
+  display: inline-flex; /* Para alinhar o texto e o ícone */
+  align-items: center;
+  gap: 8px; /* Espaço entre texto e ícone */
+  background: var(--accent); /* Cor de fundo (mantém a cor do botão 'Gerar') */
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 0;
+  cursor: pointer;
+  min-height: 40px; /* Garante que tenha a mesma altura dos outros controles */
+}
+
+.file-input-container .btn:hover {
+  opacity: 0.9; /* Pequeno efeito hover */
+}
+
+/* Estilo para o ícone, se você quiser ajustar */
+.file-input-container .btn .icon {
+  font-size: 1.2em; /* Tamanho do ícone */
+  line-height: 1;
+}
+
+/* Ajuste para o layout dos controles */
+.controls label {
+  /* Remove qualquer estilo de label que possa afetar os novos botões */
+  display: block; /* Ou inline-block, dependendo do que for melhor */
+}
+/* Alinhamento para os outros labels */
+.controls > label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px; /* Espaçamento entre o texto do label e o select/input */
+}
+/* ===============================
+   Transições e Micro-interações
+   =============================== */
+
+/* Adiciona uma transição suave a vários elementos */
+.btn,
+.btn-muted,
+.small,
+.item,
+.app {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Efeito de 'levantar' ao passar o mouse sobre os botões */
+.btn:hover,
+.btn-muted:hover,
+.small:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+
+/* Efeito de 'pressionar' ao clicar nos botões */
+.btn:active,
+.btn-muted:active,
+.small:active {
+  transform: translateY(0px) scale(0.98);
+  opacity: 1;
+}
+
+/* Remove os efeitos para botões desabilitados */
+button[disabled]:hover,
+button[disabled]:active {
+  transform: none;
+  opacity: 0.5;
+}
+/* ===============================
+   Feedback de Carregamento (Spinner)
+   =============================== */
+
+/* Define o estado de carregamento do botão */
+#generate.is-loading {
+  pointer-events: none; /* Impede cliques múltiplos */
+}
+
+/* Esconde o texto do botão quando estiver carregando */
+#generate.is-loading .btn-text {
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* Cria o spinner usando um pseudo-elemento (sem precisar de HTML extra) */
+#generate.is-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: calc(50% - 8px);
+  left: calc(50% - 8px);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 1s ease-in-out infinite;
+}
+
+/* Define a animação de rotação */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

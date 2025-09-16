@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Conversor Imagens → PDF (Minimal)</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Conversor Imagens → PDF</h1>
+        <p class="lead">Simples, minimalista e sem backend — tudo roda no seu navegador.</p>
+      </div>
+    </header> 
+    <div class="controls">
+      <div class="file-input-container">
+  <input id="files" type="file" accept="image/*" multiple class="hidden-file-input" />
+  <label for="files" class="btn">
+    Selecionar Imagens <span class="icon">📁</span> </label>
+</div>
+
+      <label>
+        Tamanho da página
+        <select id="paperSize">
+          <option value="a4">A4 (210 × 297 mm)</option>
+          <option value="letter">Letter (215.9 × 279.4 mm)</option>
+        </select>
+      </label>
+
+      <label>
+        Orientação
+        <select id="orientation">
+          <option value="portrait">Retrato</option>
+          <option value="landscape">Paisagem</option>
+        </select>
+      </label>
+
+      <label>
+        Margem (mm)
+        <input id="margin" type="number" value="10" min="0" max="50" />
+      </label>
+
+      <button id="clear" class="btn-muted">Limpar</button>
+      <button id="generate" disabled>
+  <span class="btn-text">Gerar PDF</span>
+</button>
+    </div>
+
+    <ul id="preview"></ul>
+
+    <footer>
+      <strong>Dica:</strong> você pode arrastar e soltar (ou usar os botões) para ajustar a ordem antes de gerar o PDF.
+    </footer>
+  </div>
+
+  <!-- jsPDF (UMD) via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+   <script>
+  // Estrutura de dados: mantemos uma lista de arquivos (File objects) para poder reordenar
+  const filesList = [];
+  let draggedIndex = -1; // NOVO: Variável para guardar o índice do item sendo arrastado
+
+  const inputFiles = document.getElementById('files');
+  const preview = document.getElementById('preview');
+  const generateBtn = document.getElementById('generate');
+  const clearBtn = document.getElementById('clear');
+  const paperSelect = document.getElementById('paperSize');
+  const orientSelect = document.getElementById('orientation');
+  const marginInput = document.getElementById('margin');
+  // =================================================================
+// NOVO CÓDIGO: LÓGICA INTEGRADA DE DRAG AND DROP
+// =================================================================
+const app = document.querySelector('.app');
+
+// --- Eventos para ADICIONAR arquivos do computador ---
+
+// Adiciona o feedback visual quando um arquivo é arrastado sobre a aplicação
+app.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  app.classList.add('drop-zone-active');
+});
+
+// Remove o feedback visual quando o arquivo sai da área da aplicação
+app.addEventListener('dragleave', (e) => {
+  if (e.relatedTarget && app.contains(e.relatedTarget)) {
+    return;
+  }
+  app.classList.remove('drop-zone-active');
+});
+
+// Ação principal ao SOLTAR algo na aplicação
+app.addEventListener('drop', (e) => {
+  e.preventDefault();
+  app.classList.remove('drop-zone-active');
+
+  // A MÁGICA ACONTECE AQUI:
+  // Verificamos se o que foi solto contém ARQUIVOS
+  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    // Se sim, é um UPLOAD de novos arquivos
+    const droppedFiles = e.dataTransfer.files;
+    const imageFiles = Array.from(droppedFiles).filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length > 0) {
+      filesList.push(...imageFiles);
+      renderPreview();
+      updateControls();
+    }
+
+    // Limpa a transferência de dados para evitar que o navegador abra os arquivos
+    if (e.dataTransfer.items) {
+      e.dataTransfer.items.clear();
+    } else {
+      e.dataTransfer.clearData();
+    }
+  }
+  // Se não contiver arquivos, o evento de drop será tratado pela lógica de
+  // reordenação que já existe na lista #preview, sem conflitos.
+});
+
+// O restante do seu código (listeners no #preview, funções, etc.)
+// permanece EXATAMENTE O MESMO.
+
+  function updateControls() {
+    generateBtn.disabled = filesList.length === 0;
+  }
+
+  function renderPreview() {
+    preview.innerHTML = '';
+    filesList.forEach((file, idx) => {
+      const li = document.createElement('li');
+      li.className = 'item';
+      li.draggable = true; // MODIFICADO: Torna o item arrastável
+      li.dataset.index = idx; // NOVO: Guarda o índice no próprio elemento
+
+      const img = document.createElement('img');
+      img.className = 'thumb';
+      img.alt = file.name;
+      img.src = URL.createObjectURL(file);
+      img.draggable = false //
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.innerHTML = `<span title="${file.name}">${file.name}</span><span>${Math.round(file.size / 1024)} KB</span>`;
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+
+      const up = document.createElement('button'); up.textContent = '↑'; up.className = 'small';
+      const down = document.createElement('button'); down.textContent = '↓'; down.className = 'small';
+      const remove = document.createElement('button'); remove.textContent = 'Remover'; remove.className = 'small';
+
+      up.addEventListener('click', () => {
+        if (idx === 0) return;
+        const tmp = filesList[idx - 1]; filesList[idx - 1] = filesList[idx]; filesList[idx] = tmp; renderPreview();
+      });
+      down.addEventListener('click', () => {
+        if (idx === filesList.length - 1) return;
+        const tmp = filesList[idx + 1]; filesList[idx + 1] = filesList[idx]; filesList[idx] = tmp; renderPreview();
+      });
+      remove.addEventListener('click', () => {
+        filesList.splice(idx, 1); renderPreview(); updateControls();
+      });
+
+      actions.appendChild(up); actions.appendChild(down); actions.appendChild(remove);
+      li.appendChild(img); li.appendChild(meta); li.appendChild(actions);
+      preview.appendChild(li);
+    });
+  }
+  
+  // NOVO: Funções para lidar com os eventos de Drag and Drop
+  function handleDragStart(e) {
+    draggedIndex = Number(e.target.dataset.index);
+    e.target.classList.add('dragging');
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault(); // Essencial para permitir o 'drop'
+    const target = e.target.closest('.item');
+    if (target && target.dataset.index != draggedIndex) {
+      target.classList.add('drag-over');
+    }
+  }
+
+  function handleDragLeave(e) {
+    e.target.closest('.item')?.classList.remove('drag-over');
+  }
+
+ // Substitua a função handleDrop inteira por esta:
+
+function handleDrop(e) {
+  e.preventDefault();
+  const dropTarget = e.target.closest('.item');
+  
+  // Limpa o feedback visual de todos os itens
+  document.querySelectorAll('.item.drag-over').forEach(item => item.classList.remove('drag-over'));
+  
+  // Condição de segurança
+  if (draggedIndex < 0) return;
+  
+  // Pega a referência do item que está sendo movido
+  const draggedItem = filesList[draggedIndex];
+  
+  // Remove o item da lista TEMPORARIAMENTE para reordenar
+  // Usamos filter() para criar uma nova lista sem o item arrastado
+  const remainingItems = filesList.filter((_, index) => index !== draggedIndex);
+
+  if (dropTarget) {
+    // --- CASO 1: Soltou em cima de outro item ---
+    const dropIndex = Number(dropTarget.dataset.index);
+    
+    // Insere o item arrastado na posição correta da nova lista
+    remainingItems.splice(dropIndex, 0, draggedItem);
+    
+  } else {
+    // --- CASO 2: Soltou no espaço vazio ---
+    // Adiciona o item no final da nova lista
+    remainingItems.push(draggedItem);
+  }
+  
+  // Finalmente, atualiza a lista original com a nova ordem
+  filesList.length = 0; // Limpa o array original
+  filesList.push(...remainingItems); // Adiciona todos os itens da lista reordenada
+  
+  // Re-renderiza a lista com a ordem correta
+  renderPreview();
+}
+
+  function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      draggedIndex = -1;
+      // Limpa qualquer classe 'drag-over' que possa ter ficado para trás
+      document.querySelectorAll('.item.drag-over').forEach(item => item.classList.remove('drag-over'));
+  }
+  
+  // NOVO: Adiciona os listeners de evento na lista inteira (event delegation)
+  preview.addEventListener('dragstart', handleDragStart);
+  preview.addEventListener('dragover', handleDragOver);
+  preview.addEventListener('dragleave', handleDragLeave);
+  preview.addEventListener('drop', handleDrop);
+  preview.addEventListener('dragend', handleDragEnd);
+
+  inputFiles.addEventListener('change', (e) => {
+    const chosen = Array.from(e.target.files);
+    filesList.push(...chosen);
+    renderPreview(); updateControls();
+    inputFiles.value = '';
+  });
+
+  clearBtn.addEventListener('click', () => {
+    filesList.length = 0; renderPreview(); updateControls();
+  });
+  
+  // O restante do código (readFileAsDataURL, loadImage, PAGE_SIZES, generateBtn)
+  // permanece exatamente o mesmo.
+  // ... (cole o restante do seu código JS aqui) ...
+  
+  // Helpers: ler arquivo como dataURL e carregar imagem em elemento Image
+  function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  // Mapas de tamanhos de página (mm)
+  const PAGE_SIZES = {
+    a4: { w: 210, h: 297 },
+    letter: { w: 215.9, h: 279.4 }
+  };
+
+  generateBtn.addEventListener('click', async () => {
+    if (filesList.length === 0) return;
+    generateBtn.disabled = true; generateBtn.textContent = 'Gerando...';
+
+    try {
+      const { jsPDF } = window.jspdf; // UMD export
+      const paper = paperSelect.value;
+      const orientation = orientSelect.value;
+      const margin = Number(marginInput.value) || 10;
+
+      const pdf = new jsPDF({ orientation, unit: 'mm', format: paper });
+      let pageW = PAGE_SIZES[paper].w;
+      let pageH = PAGE_SIZES[paper].h;
+      
+      // Inverte dimensões para paisagem
+      if (orientation === 'landscape') {
+        [pageW, pageH] = [pageH, pageW];
+      }
+
+      const availW = pageW - 2 * margin;
+      const availH = pageH - 2 * margin;
+
+      for (let i = 0; i < filesList.length; i++) {
+        const file = filesList[i];
+        const dataURL = await readFileAsDataURL(file);
+        const img = await loadImage(dataURL);
+
+        const aspect = img.width / img.height;
+
+        let wMm = availW;
+        let hMm = wMm / aspect;
+
+        if (hMm > availH) {
+          hMm = availH;
+          wMm = hMm * aspect;
+        }
+
+        const x = (pageW - wMm) / 2;
+        const y = (pageH - hMm) / 2;
+
+        if (i > 0) pdf.addPage(paper, orientation);
+
+        const fmt = file.type === 'image/png' ? 'PNG' : 'JPEG';
+        pdf.addImage(dataURL, fmt, x, y, wMm, hMm);
+      }
+
+      const filename = 'imagens_para_pdf.pdf';
+      pdf.save(filename);
+
+    } catch (err) {
+      console.error(err);
+      alert('Ocorreu um erro ao gerar o PDF. Veja o console para detalhes.');
+    } finally {
+      generateBtn.disabled = false; generateBtn.textContent = 'Gerar PDF';
+    }
+  });
+
+</script>
+</body>
+</html>
